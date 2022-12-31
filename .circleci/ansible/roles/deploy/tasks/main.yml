@@ -1,0 +1,33 @@
+- name: Copy backend
+  become: yes
+  copy:
+    src: ../../artifact.tar.gz
+    dest: /home/ubuntu/udapeople/
+- name: Extract Backend
+  become: yes
+  shell: |
+    cd /home/ubuntu/udapeople
+    tar -xf artifact.tar.gz
+    ls
+- name: Build Backend
+  become: yes
+  shell: |
+    cd /home/ubuntu/udapeople/backend
+    echo "NODE_ENV=production" >> .env
+    echo "TYPEORM_CONNECTION=${TYPEORM_CONNECTION}" >> .env
+    echo "TYPEORM_ENTITIES=${TYPEORM_ENTITIES}" >> .env
+    echo "TYPEORM_HOST=${TYPEORM_HOST}" >> .env
+    echo "TYPEORM_PORT=${TYPEORM_PORT}" >> .env
+    echo "TYPEORM_USERNAME=${TYPEORM_USERNAME}" >> .env
+    echo "TYPEORM_PASSWORD=${TYPEORM_PASSWORD}" >> .env
+    echo "TYPEORM_DATABASE=${TYPEORM_DATABASE}" >> .env
+    echo "TYPEORM_MIGRATIONS=${TYPEORM_MIGRATIONS}" >> .env
+    echo "TYPEORM_MIGRATIONS_DIR=${TYPEORM_MIGRATIONS_DIR}" >> .env
+    npm run build
+- name: Start server
+  become: yes
+  shell: |
+    cd /home/ubuntu/udapeople/backend
+    pm2 delete all
+    pm2 start npm --name "udapeople-backend" -- start
+    pm2 list
