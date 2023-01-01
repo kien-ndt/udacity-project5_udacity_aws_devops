@@ -176,124 +176,46 @@ jobs:
       #     id: ${CIRCLE_WORKFLOW_ID:0:7}
       #     when: on_fail
 
-  # run-migrations:
-  #   docker:
-  #     - image: circleci/node:13.8.0
-  #   steps:
-  #     - checkout
-  #     - run:
-  #         name: Install AWS CLI
-  #         command: |
-  #           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-  #           unzip awscliv2.zip
-  #           sudo ./aws/install
-  #     - run:
-  #         name: Run migrations
-  #         command: |
-  #           cd backend
-  #           npm install
-  #           npm run migrations > migrations_dump.txt
-  #           cat migrations_dump.txt
-  #     - run:
-  #         name: Send migration results to custom server EC2
-  #         command: |
-  #           echo "Workflow=${CIRCLE_WORKFLOW_ID:0:7}"
-  #           cd backend
-  #           cat migrations_dump.txt
-  #           if grep -q "has been executed successfully" migrations_dump.txt
-  #           then
-  #             curl -H "Content-Type: text/plain" -H "token: udacity-project3-devops" --request POST --data "success" http://ec2-34-230-47-86.compute-1.amazonaws.com:3000/DB_MIGRATION_${CIRCLE_WORKFLOW_ID:0:7}
-  #           else
-  #             curl -H "Content-Type: text/plain" -H "token: udacity-project3-devops" --request POST --data "fail" http://ec2-34-230-47-86.compute-1.amazonaws.com:3000/DB_MIGRATION_${CIRCLE_WORKFLOW_ID:0:7}
-  #           fi
-  #     - destroy-environment:
-  #         id: ${CIRCLE_WORKFLOW_ID:0:7}
-  #         when: on_fail
-
-  # deploy-frontend:
-  #   docker:
-  #     - image: amazon/aws-cli
-  #   steps:
-  #     - checkout
-  #     - restore_cache:
-  #         name: Restore dependencies frontend-build node_modules
-  #         keys: frontend-build
-  #     - run:
-  #         name: Install package
-  #         command: |
-  #           yum install -y tar gzip
-  #     - run:
-  #         name: Get backend url
-  #         command: |
-  #           # your code here
-  #           export BACKEND_IP=$(aws ec2 describe-instances \
-  #             --query 'Reservations[*].Instances[*].PublicIpAddress' \
-  #             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-  #             --output text)
-  #           export API_URL="http://${BACKEND_IP}:3030"
-  #           echo "API_URL=${API_URL}"
-  #           echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
-  #           cat frontend/.env
-  #     - run:
-  #         name: Deploy frontend objects
-  #         command: |
-  #           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-  #           export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-  #           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  #           nvm install 13.8.0
-  #           cd frontend
-  #           npm install
-  #           npm run build
-  #           ls dist
-  #           # tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
-  #           aws s3 cp dist "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}" --recursive            
-  #     - destroy-environment:
-  #         id: ${CIRCLE_WORKFLOW_ID:0:7}
-  #         when: on_fail
-  #     - revert-migrations:
-  #         id: ${CIRCLE_WORKFLOW_ID:0:7}
-  #         when: on_fail
-
-  # deploy-backend:
-  #   docker:
-  #     - image: amazon/aws-cli
-  #   steps:
-  #     - checkout
-  #     - restore_cache:
-  #         name: Restore dependencies backend-build node_modules
-  #         keys: backend-build
-  #     - add_ssh_keys:
-  #         fingerprints: ["87:b6:37:6b:09:db:10:6f:96:75:e9:78:9c:47:7b:de"]
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           yum install -y tar gzip python3 openssh openssh-clients
-  #           python3 -m pip install ansible==2.9.22
-  #           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-  #           export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-  #           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  #           nvm install 13.8.0
-  #           ansible --version
-  #     - attach_workspace:
-  #         at: .
-  #     - run:
-  #         name: Deploy backend
-  #         command: |
-  #           export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-  #           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  #           cd backend
-  #           npm install
-  #           cd ..
-  #           tar -czf artifact.tar.gz backend
-  #           cd .circleci/ansible
-  #           cat inventory.txt
-  #           ansible-playbook -i inventory.txt deploy-backend.yml -vvv
-  #     - destroy-environment:
-  #         id: ${CIRCLE_WORKFLOW_ID:0:7}
-  #         when: on_fail
-  #     - revert-migrations:
-  #         id: ${CIRCLE_WORKFLOW_ID:0:7}
-  #         when: on_fail
+  deploy-backend:
+    docker:
+      - image: circleci/kubernetes
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore dependencies backend-build node_modules
+          keys: backend-build
+      - add_ssh_keys:
+          fingerprints: ["87:b6:37:6b:09:db:10:6f:96:75:e9:78:9c:47:7b:de"]
+      - run:
+          name: Install dependencies
+          command: |
+            yum install -y tar gzip python3 openssh openssh-clients
+            python3 -m pip install ansible==2.9.22
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+            export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install 13.8.0
+            ansible --version
+      - attach_workspace:
+          at: .
+      - run:
+          name: Deploy backend
+          command: |
+            export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            cd backend
+            npm install
+            cd ..
+            tar -czf artifact.tar.gz backend
+            cd .circleci/ansible
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml -vvv
+      - destroy-environment:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
+      - revert-migrations:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
 
   # smoke-test:
   #   docker:
@@ -404,8 +326,9 @@ workflows:
       #     requires: [build-backend]
       # - build-dockerimage:
           # requires: [test-backend]
-      - build-dockerimage
-      - deploy-infrastructure:
-          requires: [build-dockerimage]
+      # - build-dockerimage
+      - deploy-infrastructure
+      # - deploy-infrastructure:
+          # requires: [build-dockerimage]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
