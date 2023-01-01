@@ -102,21 +102,16 @@ jobs:
             npm run test
     
   build-dockerimage:
-    docker:
-      - image: cimg/base:2022.06
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_PASSWORD
+    machine:
+      image: ubuntu-2204:2022.04.2
     steps:   
-      - checkout   
-      - setup_remote_docker:
-          version: 20.10.14
+      - checkout
       - run:
           name: Build backend image
           command: |
+            echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USERNAME --password-stdin
             docker build -t devops5-be:lastest ./backend/
             docker tag "devops5-be:lastest" "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
-            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
             docker push "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
   deploy-infrastructure:
     docker:
