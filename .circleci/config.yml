@@ -110,7 +110,7 @@ jobs:
     steps:   
       - checkout   
       - setup_remote_docker:
-          version: 20.10.22
+          version: 20.10.14
       - run:
           name: Ensure back-end infrastructure exists
           command: |
