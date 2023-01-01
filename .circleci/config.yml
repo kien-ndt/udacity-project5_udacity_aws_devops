@@ -119,6 +119,7 @@ jobs:
             docker build -t devops5-be:lastest ./backend/
             docker tag "devops5-be:lastest" "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
             docker push "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
+  deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
     steps:
