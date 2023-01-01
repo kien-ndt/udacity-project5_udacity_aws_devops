@@ -149,32 +149,32 @@ jobs:
           paths:
             - .circleci/ansible/inventory.txt
 
-  # configure-infrastructure:
-  #   docker:
-  #     - image: amazon/aws-cli
-  #   steps:
-  #     - checkout
-  #     - add_ssh_keys:
-  #         fingerprints: ["87:b6:37:6b:09:db:10:6f:96:75:e9:78:9c:47:7b:de"]
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           yum install -y tar gzip python3 openssh openssh-clients
-  #           python3 -m pip install ansible==2.9.22
-  #           ansible --version
-  #     - attach_workspace:
-  #         at: .
-  #     - run:
-  #         name: Configure server
-  #         command: |
-  #           pwd
-  #           ls -a 
-  #           cd .circleci/ansible
-  #           cat inventory.txt
-  #           ansible-playbook -i inventory.txt configure-server.yml -vvv
-  #     - destroy-environment:
-  #         id: ${CIRCLE_WORKFLOW_ID:0:7}
-  #         when: on_fail
+  configure-infrastructure:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["87:b6:37:6b:09:db:10:6f:96:75:e9:78:9c:47:7b:de"]
+      - run:
+          name: Install dependencies
+          command: |
+            yum install -y tar gzip python3 openssh openssh-clients
+            python3 -m pip install ansible==2.9.22
+            ansible --version
+      - attach_workspace:
+          at: .
+      - run:
+          name: Configure server
+          command: |
+            pwd
+            ls -a 
+            cd .circleci/ansible
+            cat inventory.txt
+            ansible-playbook -i inventory.txt configure-server.yml -vvv
+      # - destroy-environment:
+      #     id: ${CIRCLE_WORKFLOW_ID:0:7}
+      #     when: on_fail
 
   # run-migrations:
   #   docker:
@@ -407,3 +407,5 @@ workflows:
       - build-dockerimage
       - deploy-infrastructure:
           requires: [build-dockerimage]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]

@@ -1,41 +1,53 @@
-- name: Add environment to ec2
+- name: Install docker
   become: yes
   shell: |
-    echo "TYPEORM_CONNECTION=${TYPEORM_CONNECTION}"
-    echo "export TYPEORM_CONNECTION=${TYPEORM_CONNECTION}" >> /home/ubuntu/.profile
-    echo "export TYPEORM_ENTITIES=${TYPEORM_ENTITIES}" >> /home/ubuntu/.profile
-    echo "export TYPEORM_HOST=${TYPEORM_HOST}" >> /home/ubuntu/.profile
-    echo "export TYPEORM_PORT=${TYPEORM_PORT}" >> /home/ubuntu/.profile
-    echo "export TYPEORM_USERNAME=${TYPEORM_USERNAME}" >> /home/ubuntu/.profile
-    echo "export TYPEORM_PASSWORD=${TYPEORM_PASSWORD}" >> /home/ubuntu/.profile
-    echo "export TYPEORM_DATABASE=${TYPEORM_DATABASE}" >> /home/ubuntu/.profile
-    echo "export TYPEORM_MIGRATIONS=${TYPEORM_MIGRATIONS}" >> /home/ubuntu/.profile
-    echo "export TYPEORM_MIGRATIONS_DIR=${TYPEORM_MIGRATIONS_DIR}" >> /home/ubuntu/.profile
-    
-- name: "Update apt packages"
+    apt-get -y update
+    apt-get -y install \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release
+    mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    apt-get -y update
+    apt-get -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+- name: Config docker
   become: yes
-  apt:
-    upgrade: yes
-    update_cache: yes
-
-- name: Install nodejs and dependencies
+  shell: |
+    cat <<EOF | sudo tee /etc/docker/daemon.json
+    {
+    "exec-opts": ["native.cgroupdriver=systemd"]
+    }
+    EOF
+    systemctl enable --now docker
+    usermod -aG docker ubuntu
+    systemctl restart docker
+- name: Disable swap and enable bridge connection
   become: yes
-  apt:
-    name: ["nodejs", "npm", "tar", "gzip"]
-    state: latest
-
-- name: Install n to special node version
+  shell: |
+    swapoff -a
+    sysctl net.bridge.bridge-nf-call-iptables=1
+- name: Install kubeadm to join cluster
   become: yes
-  npm:
-    name: n
-    global: yes
-
-- name: Install nodejs 13.8.0
+  shell: |
+    sudo apt-get install -y apt-transport-https curl
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    deb https://apt.kubernetes.io/ kubernetes-xenial main
+    EOF
+    apt update -y
+    apt install -y kubelet kubeadm kubectl
+    sudo apt-mark hold kubelet kubeadm kubectl
+    echo "source <(kubectl completion bash)" >> ~/.bashrc
+- name: EC2 join cluster as nodes
   become: yes
-  shell: n 13.8.0
-
-- name: Install pm2
-  become: yes
-  npm: 
-    name: pm2
-    global: yes
+  shell: |
+    cat > /etc/containerd/config.toml <<EOF
+    [plugins."io.containerd.grpc.v1.cri"]
+      systemd_cgroup = true
+    EOF
+    systemctl restart containerd
+    kubeadm join 172.31.14.64:6443 --token jaighf.41576rmd5sxd4dqd --discovery-token-ca-cert-hash sha256:8c640d6d6cdd053d321f3799e6ca7ca4ac56c6a0405ab1c7ba9014b3977d0d15
