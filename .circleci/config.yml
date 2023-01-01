@@ -112,7 +112,6 @@ jobs:
       - setup_remote_docker:
           version: 20.10.14
       - run:
-      - run:
           name: Build backend image
           command: |
             docker build -t devops5-be:lastest ../backend/
