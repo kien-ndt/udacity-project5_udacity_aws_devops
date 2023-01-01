@@ -116,7 +116,18 @@ jobs:
           command: |
             echo "$DOCKERHUB_PASSWORD"
             docker login -u $DOCKERHUB_USERNAME -p "$DOCKERHUB_PASSWORD"
-            docker build -t devops5-be:lastest ./backend/
+            cd ./backend
+            echo "NODE_ENV=production" >> .env
+            echo "TYPEORM_CONNECTION=${TYPEORM_CONNECTION}" >> .env
+            echo "TYPEORM_ENTITIES=${TYPEORM_ENTITIES}" >> .env
+            echo "TYPEORM_HOST=${TYPEORM_HOST}" >> .env
+            echo "TYPEORM_PORT=${TYPEORM_PORT}" >> .env
+            echo "TYPEORM_USERNAME=${TYPEORM_USERNAME}" >> .env
+            echo "TYPEORM_PASSWORD=${TYPEORM_PASSWORD}" >> .env
+            echo "TYPEORM_DATABASE=${TYPEORM_DATABASE}" >> .env
+            echo "TYPEORM_MIGRATIONS=${TYPEORM_MIGRATIONS}" >> .env
+            echo "TYPEORM_MIGRATIONS_DIR=${TYPEORM_MIGRATIONS_DIR}" >> .env
+            docker build -t devops5-be:lastest .
             docker tag "devops5-be:lastest" "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
             docker push "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
 
@@ -144,4 +155,5 @@ jobs:
 workflows:
   default:
     jobs:
-      - deploy-backend
+      - build-dockerimage
+      # - deploy-backend
