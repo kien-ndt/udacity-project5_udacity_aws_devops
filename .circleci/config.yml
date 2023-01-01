@@ -132,28 +132,25 @@ jobs:
             docker push "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
 
   deploy-backend:
-    machine:
-      image: ubuntu-2204:2022.04.2
+    docker:
+      - image: amazon/aws-cli
     steps:
       - checkout
+      - add_ssh_keys:
+          fingerprints: ["87:b6:37:6b:09:db:10:6f:96:75:e9:78:9c:47:7b:de"]
       - run:
-          name: Install kubectl
+          name: Install dependencies
           command: |
-            sudo apt-get -y update
-            sudo apt-get install -y ca-certificates curl
-            sudo curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-            echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-            sudo apt-get -y update
-            sudo apt-get -y install -y kubectl
-            mkdir ~/.kube
-            cp .circleci/files/kube-config ~/.kube/config
+            yum install -y tar gzip python3 openssh openssh-clients
+            python3 -m pip install ansible==2.9.22
+            ansible --version
       - run:
-          name: Get nodes
+          name: Run deploy job
           command:
-            kubectl get nodes
+            ansible-playbook -i inventory.txt deploy-backend.yml -vvv
 
 workflows:
   default:
     jobs:
-      - build-dockerimage
-      # - deploy-backend
+      # - build-dockerimage
+      - deploy-backend
