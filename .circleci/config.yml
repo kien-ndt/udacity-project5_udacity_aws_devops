@@ -114,28 +114,39 @@ jobs:
       - run:
           name: Build backend image
           command: |
-            docker build -t devops5-be:lastest ../backend/
+            docker build -t devops5-be:lastest ./backend/
             docker tag "devops5-be:lastest" "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
             docker push "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
-  #     - run:
-  #         name: Add back-end ip to ansible inventory
-  #         command: |
-  #           aws ec2 describe-instances \
-  #             --query 'Reservations[*].Instances[*].PublicIpAddress' \
-  #             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-  #             --output text >> .circleci/ansible/inventory.txt
-  #           cat .circleci/ansible/inventory.txt
-  #     - run:
-  #         name: Install package
-  #         command: |
-  #           yum install -y tar gzip
-  #     - persist_to_workspace:
-  #         root: .
-  #         paths:
-  #           - .circleci/ansible/inventory.txt
-  #     - destroy-environment:
-  #         id: ${CIRCLE_WORKFLOW_ID:0:7}
-  #         when: on_fail
+
+  deploy-infrastructure:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Ensure back-end infrastructure exists
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/backend.yml \
+              --tags project=udapeople \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
+      - run:
+          name: Add back-end ip to ansible inventory
+          command: |
+            aws ec2 describe-instances \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --output text >> .circleci/ansible/inventory.txt
+            cat .circleci/ansible/inventory.txt
+      - run:
+          name: Install package
+          command: |
+            yum install -y tar gzip
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .circleci/ansible/inventory.txt
 
   # configure-infrastructure:
   #   docker:
