@@ -9,3 +9,7 @@
 5. Smoke test green version. When fail, remove dockerfile in dockerhub, delete green version in k8s.
 6. Update service port point to green version.
 7. Delete old blue version.
+
+## URL
+1. Blue: http://3.235.1.188:30032/api/status
+2. Green: http://3.235.1.188:30033/api/status

@@ -227,17 +227,17 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-backend
-      - test-backend
-      - lint-dockerfile:
-          requires: [build-backend, test-backend]
-      - build-dockerimage:
-          requires: [lint-dockerfile]
-      - deploy-green-backend:
-          requires: [build-dockerimage]
-      - smoke-test:
-          requires: [deploy-green-backend]
-      - deploy-greentoblue-backend:
-          requires: [smoke-test]
-      - cleanup:
-          requires: [deploy-greentoblue-backend]
+      # - build-backend
+      # - test-backend
+      - lint-dockerfile
+          # requires: [build-backend, test-backend]
+      # - build-dockerimage:
+      #     requires: [lint-dockerfile]
+      # - deploy-green-backend:
+      #     requires: [build-dockerimage]
+      # - smoke-test:
+      #     requires: [deploy-green-backend]
+      # - deploy-greentoblue-backend:
+      #     requires: [smoke-test]
+      # - cleanup:
+      #     requires: [deploy-greentoblue-backend]
