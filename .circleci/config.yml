@@ -155,7 +155,6 @@ jobs:
             yum install -y tar gzip python3 openssh openssh-clients
             python3 -m pip install ansible==2.9.22
             ansible --version
-            exit 1
             export API_URL="http://3.235.1.188:30033/api/status"
             echo "$API_URL"
             if curl "${API_URL}" | grep "ok"
@@ -228,12 +227,12 @@ jobs:
 workflows:
   default:
     jobs:
-      # - build-backend
-      # - test-backend
-      # - lint-dockerfile:
-      #     requires: [build-backend, test-backend]
-      - build-dockerimage
-          # requires: [lint-dockerfile]
+      - build-backend
+      - test-backend
+      - lint-dockerfile:
+          requires: [build-backend, test-backend]
+      - build-dockerimage:
+          requires: [lint-dockerfile]
       - deploy-green-backend:
           requires: [build-dockerimage]
       - smoke-test:
