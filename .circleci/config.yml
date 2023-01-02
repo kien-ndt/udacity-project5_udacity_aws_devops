@@ -73,11 +73,11 @@ jobs:
   
   lint-dockerfile:
     docker:
-      - image: hadolint/hadolint
+      - image: circleci/docker:2.2.0
     steps:
       - checkout
       - run:
-          name: Back-end test
+          name: Lint backend dockerfile
           command: |
             cd backend
             hadolint Dockerfile
