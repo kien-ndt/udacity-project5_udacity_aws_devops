@@ -40,25 +40,6 @@ commands:
             ansible-playbook -i inventory.txt clean-onfail.yml -vvv
 
 jobs:
-  build-frontend:
-    docker:
-      - image: circleci/node:13.8.0
-    steps:
-      - checkout
-      - restore_cache:
-          keys: [frontend-build]
-      - run:
-          name: Build front-end
-          command: |
-            cd frontend
-            export API_URL=""
-            echo "${API_URL}"
-            npm install
-            npm run build
-      - save_cache:
-          paths: [frontend/node_modules]
-          key: frontend-build
-
   build-backend:
     docker:
       - image: circleci/node:13.8.0
@@ -75,20 +56,6 @@ jobs:
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
-
-  test-frontend:
-    docker:
-      - image: circleci/node:13.8.0
-    steps:
-      - checkout
-      - restore_cache:
-          keys: [frontend-build]
-      - run:
-          name: Front-end test
-          command: |
-            cd frontend
-            npm install jest
-            npm run test
                 
   test-backend:
     docker:
@@ -103,6 +70,17 @@ jobs:
             cd backend
             npm install jest
             npm run test
+  
+  lint-dockerfile:
+    docker:
+      - image: hadolint/hadolint
+    steps:
+      - checkout
+      - run:
+          name: Back-end test
+          command: |
+            cd backend
+            hadolint Dockerfile
     
   build-dockerimage:
     docker:
@@ -147,7 +125,6 @@ jobs:
             yum install -y tar gzip python3 openssh openssh-clients
             python3 -m pip install ansible==2.9.22
             ansible --version
-            exit 1
       - run:
           name: Run deploy job
           command: |
@@ -239,12 +216,16 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-dockerimage
-      - deploy-green-backend:
-          requires: [build-dockerimage]
-      - smoke-test:
-          requires: [deploy-green-backend]
-      - deploy-greentoblue-backend:
-          requires: [smoke-test]
-      - cleanup:
-          requires: [deploy-greentoblue-backend]
+      # - build-backend
+      # - test-backend
+      - lint-dockerfile
+      # - build-dockerimage:
+      #     requires: [build-backend, test-backend]
+      # - deploy-green-backend:
+      #     requires: [build-dockerimage]
+      # - smoke-test:
+      #     requires: [deploy-green-backend]
+      # - deploy-greentoblue-backend:
+      #     requires: [smoke-test]
+      # - cleanup:
+      #     requires: [deploy-greentoblue-backend]
