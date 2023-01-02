@@ -133,6 +133,9 @@ jobs:
       - run:
           name: Run deploy job
           command: |
+            yum install -y tar gzip python3 openssh openssh-clients
+            python3 -m pip install ansible==2.9.22
+            ansible --version
             cd .circleci/ansible
             ls
             cat inventory.txt
@@ -149,6 +152,9 @@ jobs:
       - run:
           name: Backend smoke test.
           command: |
+            yum install -y tar gzip python3 openssh openssh-clients
+            python3 -m pip install ansible==2.9.22
+            ansible --version
             export API_URL="http://3.235.1.188:30033/api/status"
             echo "$API_URL"
             if curl "${API_URL}" | grep "ok"
