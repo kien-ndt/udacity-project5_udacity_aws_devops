@@ -17,7 +17,7 @@ commands:
             PASSWORD=$DOCKERHUB_PASSWORD
             ORGANIZATION="kienndt"
             IMAGE="devops5-be"
-            TAG=${CIRCLE_WORKFLOW_ID:0:7}
+            TAG="${CIRCLE_WORKFLOW_ID:0:7}"
 
             login_data() {
             cat <<EOF
