@@ -146,7 +146,7 @@ jobs:
             ansible --version
       - run:
           name: Run deploy job
-          command:
+          command: |
             cd .circleci/ansible
             ls
             cat inventory.txt
