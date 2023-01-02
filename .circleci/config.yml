@@ -1,40 +1,55 @@
 version: 2.1
-      
-# commands:
-#   destroy-environment:
-#     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
-#     parameters:
-#       # Add parameter here
-#       when:
-#         type: string
-#       id:
-#         type: string
-#     steps:
-#       - run:
-#           name: Destroy environments
-#           when: on_fail
-#           command: |
-#             aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.id >>
-#             aws s3 rm s3://udapeople-<< parameters.id >> --recursive
-#             aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.id >>
-#   revert-migrations:
-#     parameters:
-#       when:
-#         type: string
-#       id:
-#         type: string
-#     steps:
-#       - run:
-#           name: Revert migrations
-#           when: on_fail
-#           command: |
-#             cd backend
-#             SUCCESS=$(curl -H "token: udacity-project3-devops" --request GET http://ec2-34-230-47-86.compute-1.amazonaws.com:3000/DB_MIGRATION_<< parameters.id >>)
-#             echo $SUCCESS
-#             if [[ "$SUCCESS" == "success" ]]
-#             then
-#               npm run migrations:revert
-#             fi
+
+commands:
+  delete-docker-image:
+    description: Delete docker image in docker hub.
+    parameters:
+      when:
+        type: string
+      id:
+        type: string
+    steps:
+      - run:
+          name: Delete docker image in docker hub.
+          when: on_fail
+          command: |
+            USERNAME=$DOCKERHUB_USERNAME
+            PASSWORD=$DOCKERHUB_PASSWORD
+            ORGANIZATION="kienndt"
+            IMAGE="devops5-be"
+            TAG=<< parameters.id >>
+
+            login_data() {
+            cat <<EOF
+            {
+              "username": "$USERNAME",
+              "password": "$PASSWORD"
+            }
+            EOF
+            }
+
+            TOKEN=`curl -s -H "Content-Type: application/json" -X POST -d "$(login_data)" "https://hub.docker.com/v2/users/login/" | jq -r .token`
+
+            curl "https://hub.docker.com/v2/repositories/${ORGANIZATION}/${IMAGE}/tags/${TAG}/" \
+            -X DELETE \
+            -H "Authorization: JWT ${TOKEN}"
+
+  clean-kubernetes:
+    description: Delete green deployment and services
+    parameters:
+      when:
+        type: string
+      id:
+        type: string
+    steps:
+      - run:
+          name: Delete docker image in docker hub.
+          when: on_fail
+          command: |
+            cd .circleci/ansible
+            ls
+            cat inventory.txt
+            ansible-playbook -i inventory.txt clean-onfail.yml -vvv
 
 jobs:
   build-frontend:
@@ -144,6 +159,7 @@ jobs:
             yum install -y tar gzip python3 openssh openssh-clients
             python3 -m pip install ansible==2.9.22
             ansible --version
+            exit 1
       - run:
           name: Run deploy job
           command: |
@@ -151,6 +167,9 @@ jobs:
             ls
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-green-backend.yml -vvv
+      - delete-docker-image:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
 
   smoke-test:
     docker:
@@ -168,6 +187,12 @@ jobs:
             else
               exit 1
             fi
+      - delete-docker-image:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
+      - clean-kubernetes:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
 
   deploy-greentoblue-backend:
     docker:
@@ -189,6 +214,12 @@ jobs:
             ls
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-greentoblue-backend.yml -vvv
+      - delete-docker-image:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
+      - clean-kubernetes:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
 
   cleanup:
     docker:
@@ -210,18 +241,22 @@ jobs:
             ls
             cat inventory.txt
             ansible-playbook -i inventory.txt cleanup.yml -vvv
+      - delete-docker-image:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
+      - clean-kubernetes:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
 
 workflows:
   default:
     jobs:
-      # - build-dockerimage
-      # - deploy-green-backend:
-      #     requires: [build-dockerimage]
-      # - smoke-test:
-      #     requires: [deploy-green-backend]
-      # - smoke-test
-      # - deploy-greentoblue-backend:
-      #     requires: [smoke-test]
-      # - cleanup:
-      #     requires: [deploy-greentoblue-backend]
-      - cleanup
+      - build-dockerimage
+      - deploy-green-backend:
+          requires: [build-dockerimage]
+      - smoke-test:
+          requires: [deploy-green-backend]
+      - deploy-greentoblue-backend:
+          requires: [smoke-test]
+      - cleanup:
+          requires: [deploy-greentoblue-backend]
