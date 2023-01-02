@@ -155,5 +155,6 @@ jobs:
 workflows:
   default:
     jobs:
-      # - build-dockerimage
+      - build-dockerimage
       - deploy-backend
+          requires: [build-dockerimage]
