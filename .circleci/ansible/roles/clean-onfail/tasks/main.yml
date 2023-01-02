@@ -10,7 +10,7 @@
 - name: Cleanup green service
   become: yes
   shell: |
-    kubectl get deployment -o name | grep "devops5-backend-green" \
+    kubectl get service -o name | grep "devops5-backend-green" \
     | while read GreenService; 
       do
         kubectl delete service $GreenService
