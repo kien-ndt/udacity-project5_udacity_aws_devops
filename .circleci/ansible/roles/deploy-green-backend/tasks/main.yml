@@ -13,4 +13,4 @@
     cd /home/ubuntu/k8s/
     envsubst < backend-deployment.yml | kubectl apply -f -
     envsubst < backend-service-green.yml | kubectl apply -f -
-    kubectl wait deploy/devops5-backend-$CIRCLE_WORKFLOW_ID --for condition=available
+    kubectl wait deploy/devops5-backend-$CIRCLE_WORKFLOW_ID --for condition=available --timeout=600s
