@@ -13,13 +13,12 @@ commands:
           name: Delete docker image in docker hub.
           when: on_fail
           command: |
-            ORGANIZATION="kienndt"
-            IMAGE="devops5-be"
+            yum install -y jq
             TAG="${CIRCLE_WORKFLOW_ID:0:7}"
 
-            TOKEN=`curl -s -H "Content-Type: application/json" -X POST -d '{"username": "${DOCKERHUB_USERNAME}", "password": ${DOCKERHUB_PASSWORD}}' "https://hub.docker.com/v2/users/login/" | jq -r .token`
-
-            curl "https://hub.docker.com/v2/repositories/${ORGANIZATION}/${IMAGE}/tags/${TAG}/" \
+            TOKEN=`curl -X POST "https://hub.docker.com/v2/users/login/" -H "Content-Type: application/json" -d '{"username": "'"$DOCKERHUB_USERNAME"'", "password": "'"$DOCKERHUB_PASSWORD"'"}' | jq -r .token`
+            echo $TOKEN
+            curl "https://hub.docker.com/v2/repositories/kienndt/devops5-be/tags/${TAG}/" \
             -X DELETE \
             -H "Authorization: JWT ${TOKEN}"
 
