@@ -13,7 +13,7 @@
     kubectl get service -o name | grep "devops5-backend-green" \
     | while read GreenService; 
       do
-        kubectl delete service $GreenService
+        kubectl delete $GreenService
         echo "Clean ${GreenService}"
       done
 - name: Cleanup k8s files
