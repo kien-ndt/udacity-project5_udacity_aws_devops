@@ -74,6 +74,9 @@ jobs:
   lint-dockerfile:
     docker:
       - image: circleci/docker:2.2.0
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_PASSWORD
     steps:
       - checkout
       - run:
