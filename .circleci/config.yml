@@ -219,8 +219,9 @@ workflows:
       #     requires: [build-dockerimage]
       # - smoke-test:
       #     requires: [deploy-green-backend]
-      - smoke-test
-      - deploy-greentoblue-backend:
-          requires: [smoke-test]
-      - cleanup:
-          requires: [deploy-greentoblue-backend]
+      # - smoke-test
+      # - deploy-greentoblue-backend:
+      #     requires: [smoke-test]
+      # - cleanup:
+      #     requires: [deploy-greentoblue-backend]
+      - cleanup
