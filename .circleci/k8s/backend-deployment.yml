@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: devops5-backend-$CIRCLE_WORKFLOW_ID
+  name: devops5-backend
 spec:
   replicas: 1
   selector:
