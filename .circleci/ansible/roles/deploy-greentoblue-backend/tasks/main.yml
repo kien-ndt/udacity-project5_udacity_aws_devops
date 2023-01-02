@@ -1,0 +1,5 @@
+- name: Change green backend to blue backend
+  become: yes
+  shell: |
+    cd /home/ubuntu/k8s/
+    envsubst < backend-service.yml | kubectl apply -f -

@@ -131,7 +131,7 @@ jobs:
             docker tag "devops5-be:lastest" "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
             docker push "kienndt/devops5-be:${CIRCLE_WORKFLOW_ID:0:7}"
 
-  deploy-backend:
+  deploy-green-backend:
     docker:
       - image: amazon/aws-cli
     steps:
@@ -150,12 +150,77 @@ jobs:
             cd .circleci/ansible
             ls
             cat inventory.txt
-            ansible-playbook -i inventory.txt deploy-backend.yml -vvv
+            ansible-playbook -i inventory.txt deploy-green-backend.yml -vvv
+
+  smoke-test:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Backend smoke test.
+          command: |
+            export API_URL="http://3.235.1.188:30033/api/status"
+            echo "$API_URL"
+            if curl "${API_URL}" | grep "ok"
+            then
+              exit 0
+            else
+              exit 1
+            fi
+
+  deploy-greentoblue-backend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["87:b6:37:6b:09:db:10:6f:96:75:e9:78:9c:47:7b:de"]
+      - run:
+          name: Install dependencies
+          command: |
+            yum install -y tar gzip python3 openssh openssh-clients
+            python3 -m pip install ansible==2.9.22
+            ansible --version
+      - run:
+          name: Run deploy job
+          command: |
+            cd .circleci/ansible
+            ls
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-greentoblue-backend.yml -vvv
+
+  cleanup:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["87:b6:37:6b:09:db:10:6f:96:75:e9:78:9c:47:7b:de"]
+      - run:
+          name: Install dependencies
+          command: |
+            yum install -y tar gzip python3 openssh openssh-clients
+            python3 -m pip install ansible==2.9.22
+            ansible --version
+      - run:
+          name: Run deploy job
+          command: |
+            cd .circleci/ansible
+            ls
+            cat inventory.txt
+            ansible-playbook -i inventory.txt cleanup.yml -vvv
 
 workflows:
   default:
     jobs:
-      - build-dockerimage
-      - deploy-backend:
-          requires: [build-dockerimage]
+      # - build-dockerimage
+      # - deploy-green-backend:
+      #     requires: [build-dockerimage]
       # - deploy-backend
+      - smoke-test:
+          requires: [deploy-green-backend]
+      - deploy-greentoblue-backend:
+          requires: [smoke-test]
+      - cleanup:
+          requires: [deploy-greentoblue-backend]

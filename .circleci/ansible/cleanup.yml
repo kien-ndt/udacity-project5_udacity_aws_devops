@@ -1,0 +1,18 @@
+---
+
+- name: "configuration play." 
+  hosts: web
+  user: ubuntu
+  become: true
+  become_method: sudo
+  become_user: ubuntu
+  gather_facts: false
+  vars:
+    - ansible_python_interpreter: /usr/bin/python3
+    - ansible_host_key_checking: false
+    - ansible_stdout_callback: yaml  
+  environment:
+    # - CIRCLE_WORKFLOW_ID: "{{ lookup('env', 'CIRCLE_WORKFLOW_ID')[0:7]}}" 
+    - CIRCLE_WORKFLOW_ID: "067ff62" 
+  roles:
+    - cleanup

@@ -1,0 +1,13 @@
+- name: Cleanup old blue version
+  become: yes
+  shell: |
+    kubectl get deployment -o name | grep "devops5-backend" | grep -v $CIRCLE_WORKFLOW_ID
+    | while read OldDeployment; 
+      do
+        kubectl delete deployment ${OldDeployment}
+        echo "Clean ${OldDeployment}"
+      done
+- name: Cleanup green service
+  become: yes
+  shell: |
+    kubectl delete service devops5-backend-green
