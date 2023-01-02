@@ -148,6 +148,8 @@ jobs:
           name: Run deploy job
           command:
             cd .circleci/ansible
+            ls
+            cat inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml -vvv
 
 workflows:
